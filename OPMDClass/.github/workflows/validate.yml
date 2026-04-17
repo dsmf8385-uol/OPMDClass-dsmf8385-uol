@@ -1,0 +1,122 @@
+name: Validate Submission Format
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+    branches: ["main"]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up Python 3.10
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r submission/requirements.txt
+
+      - name: Check required files exist
+        run: |
+          echo "── Checking required files ──────────────────────"
+          pass=true
+
+          check_file() {
+            if [ -f "$1" ]; then
+              echo "  ✅ $1"
+            else
+              echo "  ❌ MISSING: $1"
+              pass=false
+            fi
+          }
+
+          check_file "submission/model.py"
+          check_file "submission/predict.py"
+          check_file "submission/requirements.txt"
+
+          # best_model.pth is large — warn but don't fail CI
+          if [ -f "submission/best_model.pth" ]; then
+            echo "  ✅ submission/best_model.pth"
+          else
+            echo "  ⚠️  submission/best_model.pth not found (required for final submission)"
+          fi
+
+          if [ "$pass" = false ]; then
+            echo ""
+            echo "❌ Missing required files. Fix before submitting."
+            exit 1
+          fi
+
+      - name: Check Python syntax
+        run: |
+          echo "── Checking Python syntax ───────────────────────"
+          python -m py_compile submission/model.py   && echo "  ✅ model.py syntax OK"
+          python -m py_compile submission/predict.py && echo "  ✅ predict.py syntax OK"
+
+      - name: Check class interface
+        run: |
+          python - <<'EOF'
+          import sys
+          sys.path.insert(0, ".")
+          import inspect
+
+          # Check DentalClassifier exists and has forward()
+          try:
+              from submission.model import DentalClassifier
+              import torch.nn as nn
+              assert issubclass(DentalClassifier, nn.Module), \
+                  "DentalClassifier must extend nn.Module"
+              assert hasattr(DentalClassifier, "forward"), \
+                  "DentalClassifier must implement forward()"
+              print("  ✅ DentalClassifier interface OK")
+          except ImportError as e:
+              print(f"  ❌ Could not import DentalClassifier: {e}")
+              sys.exit(1)
+          except AssertionError as e:
+              print(f"  ❌ Interface error: {e}")
+              sys.exit(1)
+
+          # Check predict.py has required functions
+          try:
+              import importlib.util
+              spec = importlib.util.spec_from_file_location(
+                  "predict", "submission/predict.py"
+              )
+              mod = importlib.util.module_from_spec(spec)
+              spec.loader.exec_module(mod)
+
+              assert hasattr(mod, "load_model"), \
+                  "predict.py must define load_model()"
+              assert hasattr(mod, "predict"), \
+                  "predict.py must define predict()"
+              assert hasattr(mod, "CLASS_LABELS"), \
+                  "predict.py must define CLASS_LABELS"
+              assert mod.CLASS_LABELS == {0: "non_cancerous", 1: "cancerous"}, \
+                  "CLASS_LABELS must not be changed"
+              print("  ✅ predict.py interface OK")
+          except AssertionError as e:
+              print(f"  ❌ Interface error: {e}")
+              sys.exit(1)
+
+          print("\n✅ All checks passed — submission format is valid.")
+          EOF
+
+      - name: Check submission deadline
+        run: |
+          DEADLINE="2025-05-01T23:59:59"
+          NOW=$(date -u +"%Y-%m-%dT%H:%M:%S")
+          echo "  Deadline : $DEADLINE UTC"
+          echo "  Now      : $NOW UTC"
+          if [[ "$NOW" > "$DEADLINE" ]]; then
+            echo "  ⚠️  This push is AFTER the deadline — late penalty may apply."
+          else
+            echo "  ✅ Submitted before deadline."
+          fi
