@@ -12,8 +12,9 @@ Rules:
 """
 
 import torch
+from torchvision import transforms
 from PIL import Image
-
+from submission.model import DentalClassifier
 
 # ── Class Mapping (DO NOT CHANGE) ────────────────────────────────
 CLASS_LABELS = {
@@ -47,9 +48,7 @@ def load_model(model_path: str):
     model.eval()
 
     return model
-    # ----------------------------------------------------------------
-    # TODO: Load your model here
-    # ----------------------------------------------------------------
+
 
 
 def predict(model, image_path: str) -> int:
@@ -95,8 +94,6 @@ def predict(model, image_path: str) -> int:
         pred = torch.argmax(logits, dim = 1).item()
 
     return int(pred)
-    # ----------------------------------------------------------------
-    # TODO: Implement your prediction pipeline here
-    # ----------------------------------------------------------------
+
 
 torch.save(model.state_dict(),"submission/best_model.pth")

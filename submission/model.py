@@ -50,18 +50,6 @@ class DentalClassifier(nn.Module):
             nn.Linear(128, 2)
         )
 
-        # ----------------------------------------------------------------
-        # TODO: Define your architecture below
-        # You may use CNNs, transfer learning, ViTs, etc.
-        #
-        # Example (simple CNN — replace with your design):
-        # self.features = nn.Sequential(
-        #     nn.Conv2d(3, 32, kernel_size=3, padding=1),
-        #     nn.ReLU(),
-        #     nn.MaxPool2d(2),
-        # )
-        # self.classifier = nn.Linear(32 * 112 * 112, 2)
-        # ----------------------------------------------------------------
         pass
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
@@ -80,7 +68,3 @@ class DentalClassifier(nn.Module):
 
         return out 
 
-
-        # ----------------------------------------------------------------
-        # TODO: Implement your forward pass
-        # ----------------------------------------------------------------
