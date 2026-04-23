@@ -94,6 +94,3 @@ def predict(model, image_path: str) -> int:
         pred = torch.argmax(logits, dim = 1).item()
 
     return int(pred)
-
-
-torch.save(model.state_dict(),"submission/best_model.pth")
