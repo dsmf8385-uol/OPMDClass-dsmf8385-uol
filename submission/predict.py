@@ -98,3 +98,5 @@ def predict(model, image_path: str) -> int:
     # ----------------------------------------------------------------
     # TODO: Implement your prediction pipeline here
     # ----------------------------------------------------------------
+
+torch.save(model.state_dict(),"submission/best_model.pth")
